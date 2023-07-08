@@ -48,6 +48,7 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("akf_web").collection("user");
+    const blogCollection = client.db("akf_web").collection("blog");
 
     // jwt api
     app.post("/jwt", (req, res) => {
@@ -99,12 +100,35 @@ async function run() {
             ...userData,
           },
         };
-        const result = await userCollection.updateOne(filter, updateDoc,options);
+        const result = await userCollection.updateOne(filter, updateDoc, options);
         res.send(result);
       } catch (error) {
         console.log(error);
       }
     });
+
+    // all blog post api
+    app.post('/all-post', verifyJWT, async (req, res) => {
+      try {
+        const blog = req.body;
+        const result = await blogCollection.insertOne(blog);
+        res.send(result)
+      } catch (error) {
+        console.log(error)
+      }
+    })
+
+    // get my blog api
+    app.get('/my-blog', verifyJWT, async (req, res) => {
+      try {
+        const email = req.query?.email;
+        const query = { email: email };
+        const result = await blogCollection.find(query).toArray();
+        res.send(result)
+      } catch (error) {
+        console.log(error)
+      }
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log(
