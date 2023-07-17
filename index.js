@@ -3,7 +3,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 app.use(cors());
@@ -130,9 +130,20 @@ async function run() {
       }
     })
 
-    app.get('/all-blog',async(req,res)=>{
+    app.get('/all-blog', async (req, res) => {
       try {
-        const result=await blogCollection.find({}).toArray();
+        const result = await blogCollection.find({}).toArray();
+        res.send(result)
+      } catch (error) {
+        console.log(error)
+      }
+    })
+
+    app.delete('/remove-blog/:id', verifyJWT, async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await blogCollection.deleteOne(query);
         res.send(result)
       } catch (error) {
         console.log(error)
