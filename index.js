@@ -130,6 +130,8 @@ async function run() {
       }
     })
 
+
+    // get all blog api
     app.get('/all-blog', async (req, res) => {
       try {
         const result = await blogCollection.find({}).toArray();
@@ -139,6 +141,7 @@ async function run() {
       }
     })
 
+    // delete blog api
     app.delete('/remove-blog/:id', verifyJWT, async (req, res) => {
       try {
         const id = req.params.id;
@@ -148,6 +151,11 @@ async function run() {
       } catch (error) {
         console.log(error)
       }
+    })
+
+    // get user profile hover api
+    app.get('/user-profile/:email',verifyJWT,async(req,res)=>{
+      console.log(req.params?.email)
     })
 
     await client.db("admin").command({ ping: 1 });
