@@ -100,7 +100,11 @@ async function run() {
             ...userData,
           },
         };
-        const result = await userCollection.updateOne(filter, updateDoc, options);
+        const result = await userCollection.updateOne(
+          filter,
+          updateDoc,
+          options
+        );
         res.send(result);
       } catch (error) {
         console.log(error);
@@ -108,62 +112,74 @@ async function run() {
     });
 
     // all blog post api
-    app.post('/all-post', verifyJWT, async (req, res) => {
+    app.post("/all-post", verifyJWT, async (req, res) => {
       try {
         const blog = req.body;
         const result = await blogCollection.insertOne(blog);
-        res.send(result)
+        res.send(result);
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    })
+    });
 
     // get my blog api
-    app.get('/my-blog', verifyJWT, async (req, res) => {
+    app.get("/my-blog", verifyJWT, async (req, res) => {
       try {
         const email = req.query?.email;
         const query = { email: email };
         const result = await blogCollection.find(query).toArray();
-        res.send(result)
+        res.send(result);
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    })
-
+    });
 
     // get all blog api
-    app.get('/all-blog', async (req, res) => {
+    app.get("/all-blog", async (req, res) => {
       try {
         const result = await blogCollection.find({}).toArray();
-        res.send(result)
+        res.send(result);
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    })
+    });
 
     // get user profile hover api
-    app.get('/user-profile', verifyJWT, async (req, res) => {
+    app.get("/user-profile", verifyJWT, async (req, res) => {
       try {
         const id = req.query?.id;
-        const query = { _id:new ObjectId(id)};
+        const query = { _id: new ObjectId(id) };
         const result = await userCollection.findOne(query);
-        res.send(result)
+        res.send(result);
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    })
+    });
 
     // delete blog api
-    app.delete('/remove-blog/:id', verifyJWT, async (req, res) => {
+    app.delete("/remove-blog/:id", verifyJWT, async (req, res) => {
       try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) };
         const result = await blogCollection.deleteOne(query);
-        res.send(result)
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    // see-profile api
+    app.get("/blog/see-profile/:id", verifyJWT, async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { userId: id };
+        const result = await blogCollection.find(query).toArray();
+        const image=await blogCollection.findOne(query)
+        res.send({result,image});
       } catch (error) {
         console.log(error)
       }
-    })
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
