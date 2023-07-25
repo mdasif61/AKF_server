@@ -49,6 +49,7 @@ async function run() {
 
     const userCollection = client.db("akf_web").collection("user");
     const blogCollection = client.db("akf_web").collection("blog");
+    const reactionCollection = client.db("akf_web").collection("reaction");
 
     // jwt api
     app.post("/jwt", (req, res) => {
@@ -137,7 +138,7 @@ async function run() {
     // get all blog api
     app.get("/all-blog", async (req, res) => {
       try {
-        const result = await blogCollection.find({}).toArray();
+        const result = await blogCollection.find({}).sort({date:-1}).toArray();
         res.send(result);
       } catch (error) {
         console.log(error);
@@ -174,10 +175,10 @@ async function run() {
         const id = req.params.id;
         const query = { userId: id };
         const result = await blogCollection.find(query).toArray();
-        const image=await blogCollection.findOne(query)
-        res.send({result,image});
+        const image = await blogCollection.findOne(query);
+        res.send({ result, image });
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
     });
 
