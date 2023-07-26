@@ -138,7 +138,10 @@ async function run() {
     // get all blog api
     app.get("/all-blog", async (req, res) => {
       try {
-        const result = await blogCollection.find({}).sort({date:-1}).toArray();
+        const result = await blogCollection
+          .find({})
+          .sort({ date: -1 })
+          .toArray();
         res.send(result);
       } catch (error) {
         console.log(error);
@@ -180,6 +183,45 @@ async function run() {
       } catch (error) {
         console.log(error);
       }
+    });
+
+    // blog-reaction api
+    app.patch("/blog/reaction/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const reactName = req.query.react;
+      let data = req?.body;
+      const filter = { _id: new ObjectId(id) };
+
+      const updateDoc = {
+        $set: {
+          [`reaction.${reactName}`]:
+            data.reaction[reactName] == 0
+              ? data.reaction[reactName] + 1
+              : data.reaction[reactName] - 1,
+        },
+      };
+      const result = await blogCollection.updateOne(filter, updateDoc);
+      res.send({ result, reactName });
+    });
+
+    app.patch("/blog/prev-react/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const body = req.body;
+      const blog = await blogCollection.findOne(query);
+      const name = Object.keys(blog.reaction).filter(
+        (key) => body.name !== key
+      );
+
+      console.log(name.map((name) => name));
+
+      // const updateDoc={
+      //   $set:{
+      //     [`reaction.${name.map((name)=>name)}`]:body.post.reaction[name.map((name)=>name)]=0
+      //   }
+      // }
+      // const result=await blogCollection.updateOne(query,updateDoc);
+      // res.send(result)
     });
 
     await client.db("admin").command({ ping: 1 });
