@@ -188,41 +188,47 @@ async function run() {
     // blog-reaction api
     app.patch("/blog/reaction/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
-      const reactName = req.query.react;
+      const reactName = req.query?.react;
+      const user=req.query?.user;
       let data = req?.body;
       const filter = { _id: new ObjectId(id) };
 
+      const existingUser=data.reaction.like.users.find((id)=>id==user);
+      if(existingUser===user){
+        return res.send('already chooses')
+      }
+
       const updateDoc = {
         $set: {
-          [`reaction.${reactName}`]:
-            data.reaction[reactName] == 0
-              ? data.reaction[reactName] + 1
-              : data.reaction[reactName] - 1,
+          [`reaction.${reactName}.${reactName}`]:data.reaction[reactName][reactName] + 1
         },
+        $push:{
+          [`reaction.${reactName}.users`]:data.reaction[reactName].users=user
+        }
       };
       const result = await blogCollection.updateOne(filter, updateDoc);
       res.send({ result, reactName });
     });
 
-    app.patch("/blog/prev-react/:id", verifyJWT, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const body = req.body;
-      const blog = await blogCollection.findOne(query);
-      const name = Object.keys(blog.reaction).filter(
-        (key) => body.name !== key
-      );
+    // app.patch("/blog/prev-react/:id", verifyJWT, async (req, res) => {
+    //   const id = req.params.id;
+    //   const query = { _id: new ObjectId(id) };
+    //   const body = req.body;
+    //   const blog = await blogCollection.findOne(query);
+    //   const name = Object.keys(blog.reaction).filter(
+    //     (key) => body.name !== key
+    //   );
 
-      console.log(name.map((name) => name));
+    //   console.log(name.map((name) => name));
 
-      // const updateDoc={
-      //   $set:{
-      //     [`reaction.${name.map((name)=>name)}`]:body.post.reaction[name.map((name)=>name)]=0
-      //   }
-      // }
-      // const result=await blogCollection.updateOne(query,updateDoc);
-      // res.send(result)
-    });
+    //   const updateDoc={
+    //     $set:{
+    //       [`reaction.${name.map((name)=>name)}`]:body.post.reaction[name.map((name)=>name)]=0
+    //     }
+    //   }
+    //   const result=await blogCollection.updateOne(query,updateDoc);
+    //   res.send(result)
+    // });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
