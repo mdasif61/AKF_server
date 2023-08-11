@@ -49,7 +49,6 @@ async function run() {
 
     const userCollection = client.db("akf_web").collection("user");
     const blogCollection = client.db("akf_web").collection("blog");
-    const reactionCollection = client.db("akf_web").collection("reaction");
 
     // jwt api
     app.post("/jwt", (req, res) => {
@@ -208,18 +207,18 @@ async function run() {
           if (otherReactName !== reactName) {
             updateDoc.$pull = updateDoc.$pull || {};
             updateDoc.$pull[`reaction.${otherReactName}.users`] = user;
-            updateDoc.$set[`reaction.${otherReactName}.count`] = 0;
+            updateDoc.$set[`reaction.${otherReactName}.count`] = data.reaction[reactName].users.includes(user) && data.reaction[reactName].count>0?-1:0 
           }
         });
         const result = await blogCollection.updateOne(filter, updateDoc);
         res.send({ result, reactName });
-      }else{
+      } else {
         const updateDoc = {
           $set: {
-            [`reaction.${reactName}.count`]:data.reaction[reactName].count - 1
+            [`reaction.${reactName}.count`]: data.reaction[reactName].count - 1
           },
-          $pull:{
-            [`reaction.${reactName}.users`]:data.reaction[reactName].users=user
+          $pull: {
+            [`reaction.${reactName}.users`]: data.reaction[reactName].users = user
           }
         };
         const result = await blogCollection.updateOne(filter, updateDoc);
@@ -227,6 +226,26 @@ async function run() {
       }
 
     });
+
+    // single reaction get
+    app.get('/single-reaction/:id', verifyJWT, async (req, res) => {
+      const userId = req.params?.id;
+      const blogs = await blogCollection.find({}).toArray();
+      const reactions = req.query?.reaction.split(',') || [];
+
+      const currentUserReact = blogs?.map((blog) => {
+        const reaction = {};
+        for (const reactName of reactions) {
+          if (blog.reaction[reactName] &&
+            blog.reaction[reactName].users.includes(userId) &&
+            blog.reaction[reactName].count > 0) {
+            reaction[reactName] = blog.reaction[reactName].count
+          }
+        }
+        return reaction
+      })
+      res.send(currentUserReact)
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log(
