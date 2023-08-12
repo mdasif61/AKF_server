@@ -185,47 +185,100 @@ async function run() {
     });
 
     // blog-reaction api
+    // app.patch("/blog/reaction/:id", verifyJWT, async (req, res) => {
+    //   const id = req.params.id;
+    //   const reactName = req.query?.react;
+    //   const user = req.query?.user;
+    //   let data = req?.body;
+    //   const filter = { _id: new ObjectId(id) };
+
+    //   const existingUser = data.reaction[reactName].users.indexOf(user);
+
+    //   if (existingUser == -1) {
+    //     const updateDoc = {
+    //       $set: {
+    //         [`reaction.${reactName}.count`]: data.reaction[reactName].count + 1
+    //       },
+    //       $push: {
+    //         [`reaction.${reactName}.users`]: data.reaction[reactName].users = user
+    //       }
+    //     };
+    //     Object.keys(data.reaction).forEach((otherReactName) => {
+    //       if (otherReactName !== reactName) {
+    //         updateDoc.$pull = updateDoc.$pull || {};
+    //         updateDoc.$pull[`reaction.${otherReactName}.users`] = user;
+    //         updateDoc.$set[`reaction.${otherReactName}.count`] = data.reaction[reactName].users.includes(user) && data.reaction[reactName].count>0?-1:0 
+    //       }
+    //     });
+    //     const result = await blogCollection.updateOne(filter, updateDoc);
+    //     res.send({ result, reactName });
+    //   } else {
+    //     const updateDoc = {
+    //       $set: {
+    //         [`reaction.${reactName}.count`]: data.reaction[reactName].count - 1
+    //       },
+    //       $pull: {
+    //         [`reaction.${reactName}.users`]: data.reaction[reactName].users = user
+    //       }
+    //     };
+    //     const result = await blogCollection.updateOne(filter, updateDoc);
+    //     res.send({ result, reactName });
+    //   }
+
+    // });
+
     app.patch("/blog/reaction/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const reactName = req.query?.react;
       const user = req.query?.user;
-      let data = req?.body;
+      const data = req?.body;
       const filter = { _id: new ObjectId(id) };
-
-      const existingUser = data.reaction[reactName].users.indexOf(user);
-
-      if (existingUser == -1) {
-        const updateDoc = {
-          $set: {
-            [`reaction.${reactName}.count`]: data.reaction[reactName].count + 1
-          },
-          $push: {
-            [`reaction.${reactName}.users`]: data.reaction[reactName].users = user
-          }
+    
+      const updateDoc = {};
+    
+      // Find the previous reaction of the user for the blog post
+      const previousReaction = Object.keys(data.reaction).find(
+        (reaction) =>
+          data.reaction[reaction].users.includes(user) && reaction !== reactName
+      );
+    
+      // If the user had a previous reaction, remove it
+      if (previousReaction) {
+        updateDoc.$set = {
+          [`reaction.${previousReaction}.count`]:
+            data.reaction[previousReaction].count - 1
         };
-        Object.keys(data.reaction).forEach((otherReactName) => {
-          if (otherReactName !== reactName) {
-            updateDoc.$pull = updateDoc.$pull || {};
-            updateDoc.$pull[`reaction.${otherReactName}.users`] = user;
-            updateDoc.$set[`reaction.${otherReactName}.count`] = data.reaction[reactName].users.includes(user) && data.reaction[reactName].count>0?-1:0 
-          }
-        });
-        const result = await blogCollection.updateOne(filter, updateDoc);
-        res.send({ result, reactName });
-      } else {
-        const updateDoc = {
-          $set: {
-            [`reaction.${reactName}.count`]: data.reaction[reactName].count - 1
-          },
-          $pull: {
-            [`reaction.${reactName}.users`]: data.reaction[reactName].users = user
-          }
+        updateDoc.$pull = {
+          [`reaction.${previousReaction}.users`]: user
         };
-        const result = await blogCollection.updateOne(filter, updateDoc);
-        res.send({ result, reactName });
       }
-
+    
+      if (!data.reaction[reactName].users.includes(user)) {
+        // If the user hasn't given this reaction before
+        updateDoc.$set = {
+          ...updateDoc.$set,
+          [`reaction.${reactName}.count`]: data.reaction[reactName].count + 1
+        };
+        updateDoc.$push = {
+          [`reaction.${reactName}.users`]: user
+        };
+      } else if (data.reaction[reactName].users.includes(user)) {
+        // If the user is changing their reaction type
+        updateDoc.$set = {
+          ...updateDoc.$set,
+          [`reaction.${reactName}.count`]: data.reaction[reactName].count - 1
+        };
+        updateDoc.$pull = {
+          [`reaction.${reactName}.users`]: user
+        };
+      }
+    
+      const result = await blogCollection.updateOne(filter, updateDoc);
+      res.send({ result, reactName });
     });
+    
+    
+    
 
     // single reaction get
     app.get('/single-reaction/:id', verifyJWT, async (req, res) => {
