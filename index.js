@@ -251,8 +251,7 @@ async function run() {
           if (
             blog.reaction[reactName] &&
             blog.reaction[reactName].users.includes(userId) &&
-            blog._id==id&&
-            blog.reaction[reactName].count > 0
+            blog.reaction[reactName].count >= 0
           ) {
             reaction[reactName] = blog.reaction[reactName].count;
           }
