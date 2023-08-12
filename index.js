@@ -218,7 +218,7 @@ async function run() {
           ...updateDoc.$push,
           [`reaction.${reactName}.users`]: user
         };
-      } else if (data.reaction[reactName].users.includes(user)) {
+      } else {
         updateDoc.$set = {
           ...updateDoc.$set,
           [`reaction.${reactName}.count`]: data.reaction[reactName].count - 1
@@ -243,7 +243,6 @@ async function run() {
       const query={_id:new ObjectId(id)}
       const blogs = await blogCollection.find(query).toArray();
       const reactions = req.query?.reaction.split(',') || [];
-      
     
       const currentUserReact = blogs.map((blog) => {
         const reaction = {};
