@@ -195,13 +195,13 @@ async function run() {
       const updateDoc = {};
       const previousReaction = Object.keys(data.reaction).find(
         (reaction) =>
-          data.reaction[reaction].users.includes(user) && reaction !== reactName
+          data.reaction[reaction]?.users?.includes(user) && reaction !== reactName
       );
+      
       if (previousReaction) {
         updateDoc.$set = {
           ...updateDoc.$set,
-          [`reaction.${previousReaction}.count`]:
-            data.reaction[previousReaction].count - 1
+          [`reaction.${previousReaction}.count`]: data.reaction[previousReaction]?.count - 1
         };
         updateDoc.$pull = {
           ...updateDoc.$pull,
@@ -209,19 +209,19 @@ async function run() {
         };
       }
     
-      if (!data.reaction[reactName].users.includes(user)) {
+      if (!data.reaction[reactName]?.users?.includes(user)) {
         updateDoc.$set = {
           ...updateDoc.$set,
-          [`reaction.${reactName}.count`]: data.reaction[reactName].count + 1
+          [`reaction.${reactName}.count`]: data.reaction[reactName]?.count + 1
         };
         updateDoc.$push = {
           ...updateDoc.$push,
           [`reaction.${reactName}.users`]: user
         };
-      } else {
+      } else if(data.reaction[reactName]?.users?.includes(user)&&data.reaction[reactName].count>0) {
         updateDoc.$set = {
           ...updateDoc.$set,
-          [`reaction.${reactName}.count`]: data.reaction[reactName].count - 1
+          [`reaction.${reactName}.count`]: data.reaction[reactName]?.count - 1
         };
         updateDoc.$pull = {
           ...updateDoc.$pull,
@@ -249,8 +249,8 @@ async function run() {
         for (const reactName of reactions) {
           if (
             blog.reaction[reactName] &&
-            blog.reaction[reactName].users.includes(userId) &&
-            blog.reaction[reactName].count >= 0
+            blog.reaction[reactName]?.users?.includes(userId) &&
+            blog.reaction[reactName].count > 0
           ) {
             reaction[reactName] = blog.reaction[reactName].count;
           }
