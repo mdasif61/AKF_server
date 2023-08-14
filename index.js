@@ -96,10 +96,27 @@ async function run() {
         const filter = { email: userEmail };
         const options = { upsert: true };
         const updateDoc = {
-          $set: {
-            ...userData,
-          },
+          $set: {},
         };
+        if(userData.firstName){
+          updateDoc.$set.firstName=userData.firstName
+        }
+        if(userData.lastName){
+          updateDoc.$set.lastName=userData.lastName
+        }
+        if(userData.blood){
+          updateDoc.$set.blood=userData.blood
+        }
+        if(userData.bio){
+          updateDoc.$set.bio=userData.bio
+        }
+        if(userData.gender){
+          updateDoc.$set.gender=userData.gender
+        }
+        if(userData.phone){
+          updateDoc.$set.phone=userData.phone
+        }
+
         const result = await userCollection.updateOne(
           filter,
           updateDoc,
