@@ -98,8 +98,8 @@ async function run() {
         const updateDoc = {
           $set: {},
         };
-        if(userData.firstName){
-          updateDoc.$set.firstName=userData.firstName
+        if(userData.name){
+          updateDoc.$set.name=userData.name
         }
         if(userData.lastName){
           updateDoc.$set.lastName=userData.lastName
@@ -115,6 +115,9 @@ async function run() {
         }
         if(userData.phone){
           updateDoc.$set.phone=userData.phone
+        }
+        if(userData.address){
+          updateDoc.$set.address=userData.address
         }
 
         const result = await userCollection.updateOne(
