@@ -96,7 +96,9 @@ async function run() {
         const filter = { email: userEmail };
         const options = { upsert: true };
         const updateDoc = {
-          $set: {},
+          $set: {
+            userName:userData.name
+          },
         };
         if(userData.name){
           updateDoc.$set.name=userData.name
@@ -118,7 +120,10 @@ async function run() {
         }
         if(userData.address){
           updateDoc.$set.address=userData.address
-        }
+        };
+
+        // blog userName update
+        await blogCollection.updateMany(filter,updateDoc);
 
         const result = await userCollection.updateOne(
           filter,
@@ -126,6 +131,7 @@ async function run() {
           options
         );
         res.send(result);
+
       } catch (error) {
         console.log(error);
       }
