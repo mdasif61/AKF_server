@@ -97,33 +97,33 @@ async function run() {
         const options = { upsert: true };
         const updateDoc = {
           $set: {
-            userName:userData.name
+            userName: userData.name
           },
         };
-        if(userData.name){
-          updateDoc.$set.name=userData.name
+        if (userData.name) {
+          updateDoc.$set.name = userData.name
         }
-        if(userData.lastName){
-          updateDoc.$set.lastName=userData.lastName
+        if (userData.lastName) {
+          updateDoc.$set.lastName = userData.lastName
         }
-        if(userData.blood){
-          updateDoc.$set.blood=userData.blood
+        if (userData.blood) {
+          updateDoc.$set.blood = userData.blood
         }
-        if(userData.bio){
-          updateDoc.$set.bio=userData.bio
+        if (userData.bio) {
+          updateDoc.$set.bio = userData.bio
         }
-        if(userData.gender){
-          updateDoc.$set.gender=userData.gender
+        if (userData.gender) {
+          updateDoc.$set.gender = userData.gender
         }
-        if(userData.phone){
-          updateDoc.$set.phone=userData.phone
+        if (userData.phone) {
+          updateDoc.$set.phone = userData.phone
         }
-        if(userData.address){
-          updateDoc.$set.address=userData.address
+        if (userData.address) {
+          updateDoc.$set.address = userData.address
         };
 
         // blog userName update
-        await blogCollection.updateMany(filter,updateDoc);
+        await blogCollection.updateMany(filter, updateDoc);
 
         const result = await userCollection.updateOne(
           filter,
@@ -163,6 +163,7 @@ async function run() {
     // get all blog api
     app.get("/all-blog", async (req, res) => {
       try {
+        const blogs=await blogCollection.find().toArray()
         const result = await blogCollection
           .find({})
           .sort({ date: -1 })
@@ -209,7 +210,7 @@ async function run() {
         console.log(error);
       }
     });
-    
+
     // update reaction api
     app.patch("/blog/reaction/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
@@ -217,13 +218,13 @@ async function run() {
       const user = req.query?.user;
       const data = req?.body;
       const filter = { _id: new ObjectId(id) };
-    
+
       const updateDoc = {};
       const previousReaction = Object.keys(data.reaction).find(
         (reaction) =>
           data.reaction[reaction]?.users?.includes(user) && reaction !== reactName
       );
-      
+
       if (previousReaction) {
         updateDoc.$set = {
           ...updateDoc.$set,
@@ -234,7 +235,7 @@ async function run() {
           [`reaction.${previousReaction}.users`]: user
         };
       }
-    
+
       if (!data.reaction[reactName]?.users?.includes(user)) {
         updateDoc.$set = {
           ...updateDoc.$set,
@@ -244,7 +245,7 @@ async function run() {
           ...updateDoc.$push,
           [`reaction.${reactName}.users`]: user
         };
-      } else if(data.reaction[reactName]?.users?.includes(user)&&data.reaction[reactName].count>0) {
+      } else if (data.reaction[reactName]?.users?.includes(user) && data.reaction[reactName].count > 0) {
         updateDoc.$set = {
           ...updateDoc.$set,
           [`reaction.${reactName}.count`]: data.reaction[reactName]?.count - 1
@@ -254,22 +255,22 @@ async function run() {
           [`reaction.${reactName}.users`]: user
         };
       }
-    
+
       const result = await blogCollection.updateOne(filter, updateDoc);
       res.send({ result, reactName });
     });
-    
-    
-    
+
+
+
 
     // single reaction get
     app.get('/single-reaction/:id', verifyJWT, async (req, res) => {
       const userId = req.params.id;
-      const id=req.query?.ids;
-      const query={_id:new ObjectId(id)}
+      const id = req.query?.ids;
+      const query = { _id: new ObjectId(id) }
       const blogs = await blogCollection.find(query).toArray();
       const reactions = req.query?.reaction.split(',') || [];
-    
+
       const currentUserReact = blogs.map((blog) => {
         const reaction = {};
         for (const reactName of reactions) {
@@ -283,9 +284,29 @@ async function run() {
         }
         return { blogId: blog._id, reaction };
       });
-    
+
       res.send(currentUserReact);
     });
+
+    app.get('/total-reaction-count/:id', verifyJWT, async (req, res) => {
+      try {
+        const id=req.params.id;
+        const query={_id:new ObjectId(id)} 
+        const blogs = await blogCollection.find(query).toArray();
+    
+        const blogsWithTotalReactionCounts = blogs.map((blog) => {
+          const totalReactionCount = Object.values(blog.reaction).reduce((sum, reaction) => sum + reaction.count, 0);
+          return totalReactionCount;
+        });
+        const totalSum = blogsWithTotalReactionCounts.reduce((sum, count) => sum + count, 0);
+        console.log(totalSum)
+        res.send(blogsWithTotalReactionCounts);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send("An error occurred");
+      }
+    });
+    
     
 
     await client.db("admin").command({ ping: 1 });
