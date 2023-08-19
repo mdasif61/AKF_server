@@ -296,10 +296,10 @@ async function run() {
     
         const blogsWithTotalReactionCounts = blogs.map((blog) => {
           const totalReactionCount = Object.values(blog.reaction).reduce((sum, reaction) => sum + reaction.count, 0);
-          return totalReactionCount;
+          const remainIcon=Object.keys(blog.reaction).filter((icon)=>blog.reaction[icon].count>0);
+          return {totalReactionCount,remainIcon};
         });
         const totalSum = blogsWithTotalReactionCounts.reduce((sum, count) => sum + count, 0);
-        console.log(totalSum)
         res.send(blogsWithTotalReactionCounts);
       } catch (error) {
         console.log(error);
