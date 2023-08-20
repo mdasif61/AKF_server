@@ -163,7 +163,7 @@ async function run() {
     // get all blog api
     app.get("/all-blog", async (req, res) => {
       try {
-        const blogs=await blogCollection.find().toArray()
+        const blogs = await blogCollection.find().toArray()
         const result = await blogCollection
           .find({})
           .sort({ date: -1 })
@@ -290,14 +290,16 @@ async function run() {
 
     app.get('/total-reaction-count/:id', verifyJWT, async (req, res) => {
       try {
-        const id=req.params.id;
-        const query={_id:new ObjectId(id)} 
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) }
         const blogs = await blogCollection.find(query).toArray();
-    
+
         const blogsWithTotalReactionCounts = blogs.map((blog) => {
           const totalReactionCount = Object.values(blog.reaction).reduce((sum, reaction) => sum + reaction.count, 0);
-          const remainIcon=Object.keys(blog.reaction).filter((icon)=>blog.reaction[icon].count>0);
-          return {totalReactionCount,remainIcon};
+          const remainIcon = Object.keys(blog.reaction).filter((icon) => blog.reaction[icon].count > 0);
+          const userId=Object.keys(blog.reaction).filter((ids)=>blog.reaction[ids].count>0);
+          console.log(userId.map(id=>blog.reaction[id].users).flat())
+          return { totalReactionCount, remainIcon };
         });
         const totalSum = blogsWithTotalReactionCounts.reduce((sum, count) => sum + count, 0);
         res.send(blogsWithTotalReactionCounts);
@@ -306,7 +308,20 @@ async function run() {
         res.status(500).send("An error occurred");
       }
     });
-    
+
+    // reacted-profile-api
+    app.get('/reacted-profile/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const checkUser = await blogCollection.find(query).toArray();
+      const getUserId = checkUser.map((user) => {
+        const userReactedId = Object.keys(user.reaction);
+        userReactedId.forEach((name)=>{
+          
+        })
+      })
+    })
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
