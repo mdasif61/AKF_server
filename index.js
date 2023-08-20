@@ -296,9 +296,9 @@ async function run() {
 
         const blogsWithTotalReactionCounts = blogs.map((blog) => {
           const totalReactionCount = Object.values(blog.reaction).reduce((sum, reaction) => sum + reaction.count, 0);
+
           const remainIcon = Object.keys(blog.reaction).filter((icon) => blog.reaction[icon].count > 0);
-          const userId=Object.keys(blog.reaction).filter((ids)=>blog.reaction[ids].count>0);
-          console.log(userId.map(id=>blog.reaction[id].users).flat())
+
           return { totalReactionCount, remainIcon };
         });
         const totalSum = blogsWithTotalReactionCounts.reduce((sum, count) => sum + count, 0);
@@ -314,12 +314,13 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const checkUser = await blogCollection.find(query).toArray();
-      const getUserId = checkUser.map((user) => {
-        const userReactedId = Object.keys(user.reaction);
-        userReactedId.forEach((name)=>{
-          
-        })
-      })
+      const getUserId = checkUser.flatMap((user) => {
+        const reactions=user.reaction;
+        const userByReaction=Object.values(reactions).flatMap((reaction)=>reaction.users)
+      return userByReaction.flat()
+      });
+      const users=await userCollection.find({_id:{$in:getUserId.map((id)=>new ObjectId(id))}}).toArray();
+      res.send(users)
     })
 
     await client.db("admin").command({ ping: 1 });
