@@ -321,6 +321,23 @@ async function run() {
       });
       const users=await userCollection.find({_id:{$in:getUserId.map((id)=>new ObjectId(id))}}).toArray();
       res.send(users)
+    });
+
+    // comments post-api
+    app.patch('/blog/comments/:id',verifyJWT,async(req,res)=>{
+      const blogId=req?.params?.id;
+      const comment=req?.body;
+      const userId=req?.query?.user;
+      const filter={_id:new ObjectId(blogId)};
+
+
+      const updateDoc={
+        $push:{
+          comments:{comment:comment.comment,user:userId}
+        }
+      }
+      const result=await blogCollection.updateOne(filter,updateDoc);
+      res.send(result)
     })
 
     await client.db("admin").command({ ping: 1 });
