@@ -338,6 +338,19 @@ async function run() {
       }
       const result=await blogCollection.updateOne(filter,updateDoc);
       res.send(result)
+    });
+
+    // get comment profile
+    app.get('/comment-profile/:id',verifyJWT,async(req,res)=>{
+      const id=req?.params?.id;
+      const query={_id:new ObjectId(id)}
+      const blogs=await blogCollection.find(query).toArray();
+      const findCommentId=blogs.map((blog)=>{
+        const findComment=blog?.comments?.map((userId)=>{
+          return userId?.user
+        })
+      });
+      console.log(findCommentId)
     })
 
     await client.db("admin").command({ ping: 1 });
