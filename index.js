@@ -330,7 +330,6 @@ async function run() {
       const userId=req?.query?.user;
       const filter={_id:new ObjectId(blogId)};
 
-
       const updateDoc={
         $push:{
           comments:{comment:comment.comment,user:userId}
@@ -345,12 +344,14 @@ async function run() {
       const id=req?.params?.id;
       const query={_id:new ObjectId(id)}
       const blogs=await blogCollection.find(query).toArray();
-      const findCommentId=blogs.map((blog)=>{
-        const findComment=blog?.comments?.map((userId)=>{
-          return userId?.user
-        })
+      const findCommentId=blogs.flatMap((blog)=>{
+        const comment=blog.comments;
+        const commentId= comment?.flatMap((userId)=>userId.user);
+        return commentId.flat()
       });
-      console.log(findCommentId)
+
+      const result=await userCollection.find({_id:{$in:findCommentId.map((id)=>new ObjectId(id))}}).toArray();
+      res.send(result)
     })
 
     await client.db("admin").command({ ping: 1 });
