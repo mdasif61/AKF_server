@@ -161,9 +161,8 @@ async function run() {
     });
 
     // get all blog api
-    app.get("/all-blog", async (req, res) => {
+    app.get("/all-blog", verifyJWT, async (req, res) => {
       try {
-        const blogs = await blogCollection.find().toArray()
         const result = await blogCollection
           .find({})
           .sort({ date: -1 })
@@ -174,10 +173,26 @@ async function run() {
       }
     });
 
-    // get user profile hover api
-    app.get("/user-profile", verifyJWT, async (req, res) => {
+    // get search blog-api
+    app.get('/search-blog/:searchText', verifyJWT, async (req, res) => {
       try {
-        const id = req.query?.id;
+        const searchText = req.params.searchText;
+        const result = await blogCollection.find({
+          $or: [
+            { text: { $regex: searchText, $options: "i" } },
+            { userName: { $regex: searchText, $options: "i" } }
+          ]
+        }).toArray();
+        res.send(result)
+      } catch (error) {
+        console.log(error)
+      }
+    })
+
+    // get user profile hover api
+    app.get("/user-profile/:id", verifyJWT, async (req, res) => {
+      try {
+        const id = req.params?.id;
         const query = { _id: new ObjectId(id) };
         const result = await userCollection.findOne(query);
         res.send(result);
@@ -315,42 +330,42 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const checkUser = await blogCollection.find(query).toArray();
       const getUserId = checkUser.flatMap((user) => {
-        const reactions=user.reaction;
-        const userByReaction=Object.values(reactions).flatMap((reaction)=>reaction.users)
-      return userByReaction.flat()
+        const reactions = user.reaction;
+        const userByReaction = Object.values(reactions).flatMap((reaction) => reaction.users)
+        return userByReaction.flat()
       });
-      const users=await userCollection.find({_id:{$in:getUserId.map((id)=>new ObjectId(id))}}).toArray();
+      const users = await userCollection.find({ _id: { $in: getUserId.map((id) => new ObjectId(id)) } }).toArray();
       res.send(users)
     });
 
     // comments post-api
-    app.patch('/blog/comments/:id',verifyJWT,async(req,res)=>{
-      const blogId=req?.params?.id;
-      const comment=req?.body;
-      const userId=req?.query?.user;
-      const filter={_id:new ObjectId(blogId)};
+    app.patch('/blog/comments/:id', verifyJWT, async (req, res) => {
+      const blogId = req?.params?.id;
+      const comment = req?.body;
+      const userId = req?.query?.user;
+      const filter = { _id: new ObjectId(blogId) };
 
-      const updateDoc={
-        $push:{
-          comments:{comment:comment.comment,user:userId}
+      const updateDoc = {
+        $push: {
+          comments: { comment: comment.comment, user: userId }
         }
       }
-      const result=await blogCollection.updateOne(filter,updateDoc);
+      const result = await blogCollection.updateOne(filter, updateDoc);
       res.send(result)
     });
 
     // get comment profile
-    app.get('/comment-profile/:id',verifyJWT,async(req,res)=>{
-      const id=req?.params?.id;
-      const query={_id:new ObjectId(id)}
-      const blogs=await blogCollection.find(query).toArray();
-      const findCommentId=blogs.flatMap((blog)=>{
-        const comment=blog.comments;
-        const commentId= comment?.flatMap((userId)=>userId.user);
+    app.get('/comment-profile/:id', verifyJWT, async (req, res) => {
+      const id = req?.params?.id;
+      const query = { _id: new ObjectId(id) }
+      const blogs = await blogCollection.find(query).toArray();
+      const findCommentId = blogs.flatMap((blog) => {
+        const comment = blog.comments;
+        const commentId = comment?.flatMap((userId) => userId.user);
         return commentId.flat()
       });
 
-      const result=await userCollection.find({_id:{$in:findCommentId.map((id)=>new ObjectId(id))}}).toArray();
+      const result = await userCollection.find({ _id: { $in: findCommentId.map((id) => new ObjectId(id)) } }).toArray();
       res.send(result)
     })
 
