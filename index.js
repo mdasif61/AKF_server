@@ -189,6 +189,25 @@ async function run() {
       }
     })
 
+    // get self-blog api
+    app.get('/self-blog/:id', verifyJWT, async (req, res) => {
+      try {
+        const id = req?.params?.id;
+        const searchText = req?.query?.selfBlog;
+        const query = {
+          userId: id,
+          $or: [
+            { text: { $regex: searchText, $options: "i" } },
+            { userName: { $regex: searchText, $options: "i" } }
+          ]
+        }
+        const result = await blogCollection.find(query).toArray();
+        res.send(result)
+      } catch (error) {
+        console.log(error)
+      }
+    })
+
     // get user profile hover api
     app.get("/user-profile/:id", verifyJWT, async (req, res) => {
       try {
