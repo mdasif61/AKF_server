@@ -97,30 +97,30 @@ async function run() {
         const options = { upsert: true };
         const updateDoc = {
           $set: {
-            userName: userData.name
+            userName: userData.name,
           },
         };
         if (userData.name) {
-          updateDoc.$set.name = userData.name
+          updateDoc.$set.name = userData.name;
         }
         if (userData.lastName) {
-          updateDoc.$set.lastName = userData.lastName
+          updateDoc.$set.lastName = userData.lastName;
         }
         if (userData.blood) {
-          updateDoc.$set.blood = userData.blood
+          updateDoc.$set.blood = userData.blood;
         }
         if (userData.bio) {
-          updateDoc.$set.bio = userData.bio
+          updateDoc.$set.bio = userData.bio;
         }
         if (userData.gender) {
-          updateDoc.$set.gender = userData.gender
+          updateDoc.$set.gender = userData.gender;
         }
         if (userData.phone) {
-          updateDoc.$set.phone = userData.phone
+          updateDoc.$set.phone = userData.phone;
         }
         if (userData.address) {
-          updateDoc.$set.address = userData.address
-        };
+          updateDoc.$set.address = userData.address;
+        }
 
         // blog userName update
         await blogCollection.updateMany(filter, updateDoc);
@@ -131,7 +131,6 @@ async function run() {
           options
         );
         res.send(result);
-
       } catch (error) {
         console.log(error);
       }
@@ -160,6 +159,71 @@ async function run() {
       }
     });
 
+    // editpost get api
+    app.get("/editpost/:id", verifyJWT, async (req, res) => {
+      try {
+        const result = await blogCollection.findOne({
+          _id: new ObjectId(req?.params?.id),
+        });
+        res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    // delete photo in edit page api
+    app.delete("/delete-photo/:img",verifyJWT,async(req,res)=>{
+      const imageURL=req.params.img;
+      const blogId=req.query.id
+
+      try {
+        
+        const blog = await blogCollection.findOne({_id:new ObjectId(blogId)});
+        const imageIndex=blog.photo.indexOf(imageURL);
+        if(imageIndex===-1){
+          return res.status(404).send({error: "Image url not found"})
+        }
+        
+        blog.photo.splice(imageIndex,1);
+        const result=await blogCollection.updateOne({_id:new ObjectId(blogId)},{$set:{photo:blog.photo}})
+        res.status(200).send(result)
+
+      } catch (error) {
+        console.error('Error image deleting : ',error);
+        return res.status(500).send({error:"internal server error"})
+      }
+
+    })
+
+    // add new photo in blog api
+    app.patch('/update-blog/:img',verifyJWT,async(req,res)=>{
+      const imageURL=req?.params?.img
+      const blogId=req.query?.blogId;
+      const filter={_id:new ObjectId(blogId)}
+      if(!imageURL){
+        return res.status(404).send({error:"Image URL not found"})
+      }
+
+      try {
+        const updateDoc={
+          $addToSet:{
+            photo:imageURL
+          }
+        }
+        const result=await blogCollection.findOneAndUpdate(filter,updateDoc,{new:true});
+        if(result){
+         return res.status(200).send(result)
+        }else{
+          return res.status(404).send({error: "Blog Not Found"})
+        }
+      } catch (error) {
+        console.log('Error Updating blog: ', error);
+        return res.status(500).send({error:'Internal Server Error'})
+      }
+
+
+    })
+
     // get all blog api
     app.get("/all-blog", verifyJWT, async (req, res) => {
       try {
@@ -174,23 +238,25 @@ async function run() {
     });
 
     // get search blog-api
-    app.get('/search-blog/:searchText', verifyJWT, async (req, res) => {
+    app.get("/search-blog/:searchText", verifyJWT, async (req, res) => {
       try {
         const searchText = req.params.searchText;
-        const result = await blogCollection.find({
-          $or: [
-            { text: { $regex: searchText, $options: "i" } },
-            { userName: { $regex: searchText, $options: "i" } }
-          ]
-        }).toArray();
-        res.send(result)
+        const result = await blogCollection
+          .find({
+            $or: [
+              { text: { $regex: searchText, $options: "i" } },
+              { userName: { $regex: searchText, $options: "i" } },
+            ],
+          })
+          .toArray();
+        res.send(result);
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    })
+    });
 
     // get self-blog api
-    app.get('/self-blog/:id', verifyJWT, async (req, res) => {
+    app.get("/self-blog/:id", verifyJWT, async (req, res) => {
       try {
         const id = req?.params?.id;
         const searchText = req?.query?.selfBlog;
@@ -198,15 +264,15 @@ async function run() {
           userId: id,
           $or: [
             { text: { $regex: searchText, $options: "i" } },
-            { userName: { $regex: searchText, $options: "i" } }
-          ]
-        }
+            { userName: { $regex: searchText, $options: "i" } },
+          ],
+        };
         const result = await blogCollection.find(query).toArray();
-        res.send(result)
+        res.send(result);
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    })
+    });
 
     // get user profile hover api
     app.get("/user-profile/:id", verifyJWT, async (req, res) => {
@@ -256,37 +322,42 @@ async function run() {
       const updateDoc = {};
       const previousReaction = Object.keys(data.reaction).find(
         (reaction) =>
-          data.reaction[reaction]?.users?.includes(user) && reaction !== reactName
+          data.reaction[reaction]?.users?.includes(user) &&
+          reaction !== reactName
       );
 
       if (previousReaction) {
         updateDoc.$set = {
           ...updateDoc.$set,
-          [`reaction.${previousReaction}.count`]: data.reaction[previousReaction]?.count - 1
+          [`reaction.${previousReaction}.count`]:
+            data.reaction[previousReaction]?.count - 1,
         };
         updateDoc.$pull = {
           ...updateDoc.$pull,
-          [`reaction.${previousReaction}.users`]: user
+          [`reaction.${previousReaction}.users`]: user,
         };
       }
 
       if (!data.reaction[reactName]?.users?.includes(user)) {
         updateDoc.$set = {
           ...updateDoc.$set,
-          [`reaction.${reactName}.count`]: data.reaction[reactName]?.count + 1
+          [`reaction.${reactName}.count`]: data.reaction[reactName]?.count + 1,
         };
         updateDoc.$push = {
           ...updateDoc.$push,
-          [`reaction.${reactName}.users`]: user
+          [`reaction.${reactName}.users`]: user,
         };
-      } else if (data.reaction[reactName]?.users?.includes(user) && data.reaction[reactName].count > 0) {
+      } else if (
+        data.reaction[reactName]?.users?.includes(user) &&
+        data.reaction[reactName].count > 0
+      ) {
         updateDoc.$set = {
           ...updateDoc.$set,
-          [`reaction.${reactName}.count`]: data.reaction[reactName]?.count - 1
+          [`reaction.${reactName}.count`]: data.reaction[reactName]?.count - 1,
         };
         updateDoc.$pull = {
           ...updateDoc.$pull,
-          [`reaction.${reactName}.users`]: user
+          [`reaction.${reactName}.users`]: user,
         };
       }
 
@@ -294,16 +365,13 @@ async function run() {
       res.send({ result, reactName });
     });
 
-
-
-
     // single reaction get
-    app.get('/single-reaction/:id', verifyJWT, async (req, res) => {
+    app.get("/single-reaction/:id", verifyJWT, async (req, res) => {
       const userId = req.params.id;
       const id = req.query?.ids;
-      const query = { _id: new ObjectId(id) }
+      const query = { _id: new ObjectId(id) };
       const blogs = await blogCollection.find(query).toArray();
-      const reactions = req.query?.reaction.split(',') || [];
+      const reactions = req.query?.reaction.split(",") || [];
 
       const currentUserReact = blogs.map((blog) => {
         const reaction = {};
@@ -322,20 +390,28 @@ async function run() {
       res.send(currentUserReact);
     });
 
-    app.get('/total-reaction-count/:id', verifyJWT, async (req, res) => {
+    app.get("/total-reaction-count/:id", verifyJWT, async (req, res) => {
       try {
         const id = req.params.id;
-        const query = { _id: new ObjectId(id) }
+        const query = { _id: new ObjectId(id) };
         const blogs = await blogCollection.find(query).toArray();
 
         const blogsWithTotalReactionCounts = blogs.map((blog) => {
-          const totalReactionCount = Object.values(blog.reaction).reduce((sum, reaction) => sum + reaction.count, 0);
+          const totalReactionCount = Object.values(blog.reaction).reduce(
+            (sum, reaction) => sum + reaction.count,
+            0
+          );
 
-          const remainIcon = Object.keys(blog.reaction).filter((icon) => blog.reaction[icon].count > 0);
+          const remainIcon = Object.keys(blog.reaction).filter(
+            (icon) => blog.reaction[icon].count > 0
+          );
 
           return { totalReactionCount, remainIcon };
         });
-        const totalSum = blogsWithTotalReactionCounts.reduce((sum, count) => sum + count, 0);
+        const totalSum = blogsWithTotalReactionCounts.reduce(
+          (sum, count) => sum + count,
+          0
+        );
         res.send(blogsWithTotalReactionCounts);
       } catch (error) {
         console.log(error);
@@ -344,21 +420,25 @@ async function run() {
     });
 
     // reacted-profile-api
-    app.get('/reacted-profile/:id', verifyJWT, async (req, res) => {
+    app.get("/reacted-profile/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const checkUser = await blogCollection.find(query).toArray();
       const getUserId = checkUser.flatMap((user) => {
         const reactions = user.reaction;
-        const userByReaction = Object.values(reactions).flatMap((reaction) => reaction.users)
-        return userByReaction.flat()
+        const userByReaction = Object.values(reactions).flatMap(
+          (reaction) => reaction.users
+        );
+        return userByReaction.flat();
       });
-      const users = await userCollection.find({ _id: { $in: getUserId.map((id) => new ObjectId(id)) } }).toArray();
-      res.send(users)
+      const users = await userCollection
+        .find({ _id: { $in: getUserId.map((id) => new ObjectId(id)) } })
+        .toArray();
+      res.send(users);
     });
 
     // comments post-api
-    app.patch('/blog/comments/:id', verifyJWT, async (req, res) => {
+    app.patch("/blog/comments/:id", verifyJWT, async (req, res) => {
       const blogId = req?.params?.id;
       const comment = req?.body;
       const userId = req?.query?.user;
@@ -366,27 +446,29 @@ async function run() {
 
       const updateDoc = {
         $push: {
-          comments: { comment: comment.comment, user: userId }
-        }
-      }
+          comments: { comment: comment.comment, user: userId },
+        },
+      };
       const result = await blogCollection.updateOne(filter, updateDoc);
-      res.send(result)
+      res.send(result);
     });
 
     // get comment profile
-    app.get('/comment-profile/:id', verifyJWT, async (req, res) => {
+    app.get("/comment-profile/:id", verifyJWT, async (req, res) => {
       const id = req?.params?.id;
-      const query = { _id: new ObjectId(id) }
+      const query = { _id: new ObjectId(id) };
       const blogs = await blogCollection.find(query).toArray();
       const findCommentId = blogs.flatMap((blog) => {
         const comment = blog.comments;
         const commentId = comment?.flatMap((userId) => userId.user);
-        return commentId.flat()
+        return commentId.flat();
       });
 
-      const result = await userCollection.find({ _id: { $in: findCommentId.map((id) => new ObjectId(id)) } }).toArray();
-      res.send(result)
-    })
+      const result = await userCollection
+        .find({ _id: { $in: findCommentId.map((id) => new ObjectId(id)) } })
+        .toArray();
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
