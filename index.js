@@ -172,57 +172,78 @@ async function run() {
     });
 
     // delete photo in edit page api
-    app.delete("/delete-photo/:img",verifyJWT,async(req,res)=>{
-      const imageURL=req.params.img;
-      const blogId=req.query.id
+    app.delete("/delete-photo/:img", verifyJWT, async (req, res) => {
+      const imageURL = req.params.img;
+      const blogId = req.query.id;
 
       try {
-        
-        const blog = await blogCollection.findOne({_id:new ObjectId(blogId)});
-        const imageIndex=blog.photo.indexOf(imageURL);
-        if(imageIndex===-1){
-          return res.status(404).send({error: "Image url not found"})
+        const blog = await blogCollection.findOne({
+          _id: new ObjectId(blogId),
+        });
+        const imageIndex = blog.photo.indexOf(imageURL);
+        if (imageIndex === -1) {
+          return res.status(404).send({ error: "Image url not found" });
         }
-        
-        blog.photo.splice(imageIndex,1);
-        const result=await blogCollection.updateOne({_id:new ObjectId(blogId)},{$set:{photo:blog.photo}})
-        res.status(200).send(result)
 
+        blog.photo.splice(imageIndex, 1);
+        const result = await blogCollection.updateOne(
+          { _id: new ObjectId(blogId) },
+          { $set: { photo: blog.photo } }
+        );
+        res.status(200).send(result);
       } catch (error) {
-        console.error('Error image deleting : ',error);
-        return res.status(500).send({error:"internal server error"})
+        console.error("Error image deleting : ", error);
+        return res.status(500).send({ error: "internal server error" });
       }
-
-    })
+    });
 
     // add new photo in blog api
-    app.patch('/update-blog/:img',verifyJWT,async(req,res)=>{
-      const imageURL=req?.params?.img
-      const blogId=req.query?.blogId;
-      const filter={_id:new ObjectId(blogId)}
-      if(!imageURL){
-        return res.status(404).send({error:"Image URL not found"})
+    app.patch("/update-blog/:img", verifyJWT, async (req, res) => {
+      const imageURL = req?.params?.img;
+      const blogId = req.query?.blogId;
+      const filter = { _id: new ObjectId(blogId) };
+      if (!imageURL) {
+        return res.status(404).send({ error: "Image URL not found" });
       }
 
       try {
-        const updateDoc={
-          $addToSet:{
-            photo:imageURL
-          }
-        }
-        const result=await blogCollection.findOneAndUpdate(filter,updateDoc,{new:true});
-        if(result){
-         return res.status(200).send(result)
-        }else{
-          return res.status(404).send({error: "Blog Not Found"})
+        const updateDoc = {
+          $addToSet: {
+            photo: imageURL,
+          },
+        };
+        const result = await blogCollection.findOneAndUpdate(
+          filter,
+          updateDoc,
+          { new: true }
+        );
+        if (result) {
+          return res.status(200).send(result);
+        } else {
+          return res.status(404).send({ error: "Blog Not Found" });
         }
       } catch (error) {
-        console.log('Error Updating blog: ', error);
-        return res.status(500).send({error:'Internal Server Error'})
+        console.log("Error Updating blog: ", error);
+        return res.status(500).send({ error: "Internal Server Error" });
       }
+    });
 
-
-    })
+    // update status blog api
+    app.patch("/updateBlog/:id", verifyJWT, async (req, res) => {
+      const { status } = req?.body;
+      const blogId = req?.params?.id;
+      const filter = { _id: new ObjectId(blogId) };
+      try {
+        const updateDoc = {
+          $set:{text:status}
+        };
+        const result=await blogCollection.findOneAndUpdate(filter,updateDoc,{new:true});
+        res.status(200).send(result)
+      } catch (error) {
+        console.log("Status Updae Error : ", error);
+        return res.status(500).send({error:"internal server error"})
+      }
+    });
 
     // get all blog api
     app.get("/all-blog", verifyJWT, async (req, res) => {
